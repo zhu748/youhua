@@ -6,6 +6,7 @@ import { TestConfig, TestConfigType } from '@/components/proxy-checker/TestConfi
 import { ProgressPanel, BatchStats, BatchStatus } from '@/components/proxy-checker/ProgressPanel'
 import { ResultsTable, ResultItem } from '@/components/proxy-checker/ResultsTable'
 import { TxtViewer } from '@/components/proxy-checker/TxtViewer'
+import { SchedulePanel } from '@/components/proxy-checker/SchedulePanel'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
@@ -362,6 +363,15 @@ export default function Home() {
           batchId={batchId}
           workingCount={stats?.working || 0}
           isRunning={batchStatus === 'running'}
+        />
+
+        {/* Scheduler */}
+        <SchedulePanel
+          currentSources={sources.map((s) => ({
+            url: s.url,
+            label: s.label,
+            type: s.type,
+          }))}
         />
 
         {/* How it works */}

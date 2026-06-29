@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -29,4 +26,72 @@ model Post {
   authorId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// A scheduled (cron-like) proxy test job config. Singleton (id="default").
+model ScheduleConfig {
+  id              String   @id @default("default")
+  /// Whether the scheduler is currently enabled (auto-runs on interval).
+  enabled         Boolean  @default(true)
+  /// Interval in minutes between automatic runs.
+  intervalMinutes Int      @default(60)
+  /// ISO target URL used for testing.
+  targetUrl       String   @default("http://www.google.com/generate_204")
+  /// Timeout in ms per proxy test.
+  timeoutMs       Int      @default(5000)
+  /// JSON array of source URLs to test (serialized).
+  /// Each item: { url, label, type }
+  sourcesJson     String   @default("[]")
+  /// Last time the config was updated.
+  updatedAt       DateTime @updatedAt
+  /// When the next run is scheduled (epoch ms). 0 if not scheduled.
+  nextRunAt       DateTime?
+  /// Last run start time.
+  lastRunAt       DateTime?
+  /// Last run status: pending | running | completed | failed | stopped.
+  lastRunStatus   String   @default("pending")
+}
+
+/// A single run of the scheduler (or manual batch that was persisted).
+model ScheduledRun {
+  id            String   @id @default(cuid())
+  /// "schedule" for automatic runs, "manual" for user-triggered ones.
+  trigger       String   @default("schedule")
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  status        String   @default("running") // running | completed | failed | stopped
+  /// Total proxies tested.
+  total         Int      @default(0)
+  /// Working proxies count.
+  working       Int      @default(0)
+  /// Failed proxies count.
+  failed        Int      @default(0)
+  /// JSON-serialized array of source infos: [{ url, label, count, type, error? }]
+  sourcesJson   String   @default("[]")
+  /// Error message if failed.
+  error         String?
+}
+
+/// A working proxy result. One row per working proxy per run.
+/// Older runs are pruned to keep DB small (only latest N runs kept).
+model WorkingProxy {
+  id            String   @id @default(cuid())
+  /// Reference to the run that produced this entry.
+  runId         String
+  /// host:port (no scheme).
+  address       String
+  host          String
+  port          Int
+  /// http | https | socks4 | socks5
+  type          String
+  /// Response time in ms.
+  responseTime  Int?
+  /// Source URL this proxy came from.
+  sourceUrl     String?
+  /// When this entry was recorded.
+  recordedAt    DateTime @default(now())
+
+  @@index([runId])
+  @@index([type])
+  @@index([address])
 }

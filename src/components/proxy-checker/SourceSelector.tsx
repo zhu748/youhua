@@ -23,6 +23,8 @@ export interface PresetSource {
   url: string
   type: 'http' | 'https' | 'socks4' | 'socks5' | 'unknown'
   description: string
+  updateFreq?: string
+  approxCount?: number
 }
 
 export interface SelectedSource {
@@ -148,6 +150,24 @@ export function SourceSelector({ selected, onChange }: Props) {
                         >
                           {p.type}
                         </Badge>
+                        {p.updateFreq && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-zinc-800/40 text-zinc-400 border-zinc-700"
+                            title="上游更新频率"
+                          >
+                            ⟳ {p.updateFreq}
+                          </Badge>
+                        )}
+                        {p.approxCount !== undefined && p.approxCount > 1000 && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-amber-500/10 text-amber-300 border-amber-500/30"
+                            title="数据量较大，检测耗时较长"
+                          >
+                            ~{(p.approxCount / 1000).toFixed(0)}k
+                          </Badge>
+                        )}
                       </div>
                       <p className="mt-1 text-[11px] text-zinc-500 leading-relaxed line-clamp-2">
                         {p.description}
