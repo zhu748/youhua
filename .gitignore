@@ -52,3 +52,22 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Local SQLite DB (use volume in production)
+db/*.db
+db/*.db-journal
+
+# Screenshots & temp files
+screenshot-*.png
+*.tmp
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Deploy temp
+agent-ctx/
+worklog.md
+download/

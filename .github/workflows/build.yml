@@ -1,0 +1,48 @@
+name: Build & Test
+
+# Validates that the project builds cleanly on every push/PR.
+# This does NOT deploy — see README.md for HuggingFace / Render deployment instructions.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true  # warnings shouldn't fail the build
+
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: 'file:/tmp/test.db'
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Test Docker build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: proxylab:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

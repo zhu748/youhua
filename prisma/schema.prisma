@@ -6,6 +6,10 @@ generator client {
 }
 
 datasource db {
+  // DATABASE_URL must be set in the environment.
+  // - Local dev: file:./db/custom.db  (or absolute path)
+  // - HuggingFace: file:/data/proxies.db  (uses /data persistent volume)
+  // - Render: file:/var/data/proxies.db  (uses Render disk)
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }

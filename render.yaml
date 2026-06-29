@@ -1,0 +1,41 @@
+# Render Blueprint for ProxyLab
+# Docs: https://render.com/docs/blueprint-spec
+# 
+# Usage:
+#   1. Push this repo to GitHub
+#   2. Go to https://dashboard.render.com/blueprints
+#   3. Click "New Blueprint" and select your repo
+#   4. Render will read this file and create the service automatically
+#
+# Costs (as of 2026):
+#   - Web Service (Starter, 512MB RAM): ~$7/month — sufficient for 50-concurrent testing
+#   - Disk (1GB): ~$0.25/month — SQLite DB needs <100MB
+#   Total: ~$7.25/month
+#
+# Alternative: use the free tier (512MB RAM, no disk) — but the SQLite DB will be
+# ephemeral and reset on every deploy/sleep. Not recommended for production.
+
+services:
+  - type: web
+    name: proxylab
+    runtime: docker
+    plan: starter  # Free tier available, but no persistent disk. Use 'starter' for production.
+    region: singapore  # Change to your nearest region: oregon, ohio, northern-virginia, frankfurt, london, singapore, sydney
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/latest/txt
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        value: file:/var/data/proxies.db
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+    # Disk for SQLite persistence — required to keep scheduled test results across deploys
+    disk:
+      name: proxylab-data
+      mountPath: /var/data
+      sizeGB: 1  # minimum; SQLite DB rarely exceeds 100MB even with 10k+ proxies

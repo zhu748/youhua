@@ -1,0 +1,56 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build output
+.next
+out
+build
+dist
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Local database (use a volume instead)
+db/*.db
+db/*.db-journal
+
+# Environment files (the host platform should provide env vars)
+.env
+.env.local
+.env.*.local
+
+# IDE / editor
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git
+.gitignore
+.github
+
+# Misc
+README.md
+LICENSE
+docs
+scripts
+screenshot-*.png
+download
+worklog.md
+agent-ctx
+.zscripts
+dev.log
+server.log
