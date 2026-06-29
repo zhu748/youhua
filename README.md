@@ -48,9 +48,12 @@ bun run start
 详见 [`deploy/huggingface/README.md`](./deploy/huggingface/README.md)
 
 要点：
-1. 创建 Docker SDK Space
+1. 在 https://huggingface.co/new-space 创建 Docker SDK Space
 2. 启用 Persistent Storage（约 $5/月）
 3. 设置环境变量 `DATABASE_URL=file:/data/proxies.db`
+4. 上传代码（Web UI 拖拽文件 或 git push 到 HF 仓库）
+
+> ⚠️ HuggingFace 不再使用 GitHub Actions 自动同步（容易配置出错）。推荐手动上传或 git push。
 
 ### Render（推荐生产环境）
 
