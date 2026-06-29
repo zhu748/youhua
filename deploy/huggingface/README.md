@@ -35,10 +35,28 @@ short_description: 在线代理批量检测 - HTTP/HTTPS/SOCKS4/SOCKS5
 2. 填写：
    - **Space name**：`proxylab`
    - **License**：MIT
-   - **SDK**：**Docker**
-   - **Hardware**：**CPU basic (16 GB RAM)** 免费
-   - **Persistent storage**：建议选 **20GB Small disk**（约 $5/月，用于持久化定时任务数据）
+   - **SDK**：选择 **Docker**
+   - **Hardware**：**CPU basic (16 GB RAM)** 免费（足够使用）
+   - **Persistent storage**：可选，两种模式都支持（见下方说明）
 3. 点击 **Create Space**
+
+#### 关于 Persistent Storage（持久存储）
+
+| 模式 | 费用 | 数据持久性 | 推荐场景 |
+|------|------|-----------|---------|
+| **不启用**（免费） | $0 | ❌ Space 重启/重新部署后数据库清空 | 测试、临时使用 |
+| **启用 20GB Small disk** | ~$5/月 | ✅ 数据持久化，跨重启保留 | 定时任务需要 24/7 运行 |
+
+**不启用持久存储的影响**：
+- 应用本身完全正常工作
+- 但每次 Space 重启/重新部署后，SQLite 数据库会被清空
+- 定时任务历史和有效代理列表会丢失
+- 需要手动触发一次检测才能让 `/api/latest/txt` 重新有数据
+
+**如何选择 DATABASE_URL**：
+- 启用了持久存储 → 在 Space Settings 中设置 `DATABASE_URL=file:/data/proxies.db`
+- 不启用持久存储 → 在 Space Settings 中设置 `DATABASE_URL=file:/tmp/proxies.db`
+- Dockerfile 中默认是 `/data/proxies.db`，可以在 Space Settings 中覆盖
 
 ### 第 3 步：上传 Dockerfile 到 Space
 

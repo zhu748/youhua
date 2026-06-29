@@ -20,7 +20,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # Note: no `cache: 'npm'` here because this repo uses bun.lock, not package-lock.json.
+          # The npm install below will regenerate package-lock.json if needed.
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund --legacy-peer-deps

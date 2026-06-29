@@ -23,7 +23,7 @@ services:
     region: singapore  # Change to your nearest region: oregon, ohio, northern-virginia, frankfurt, london, singapore, sydney
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /api/latest/txt
+    healthCheckPath: /api/healthz
     autoDeploy: true
     envVars:
       - key: DATABASE_URL

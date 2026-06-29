@@ -73,9 +73,9 @@ ENV DATABASE_URL=file:/data/proxies.db
 # Pre-create /data and /var/data and chown them so the runtime user can write
 RUN chown -R 1000:1000 /data /var/data /app 2>/dev/null || true
 
-# Healthcheck — hit the stable TXT endpoint
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:3000/api/latest/txt || exit 1
+# Healthcheck — hit the lightweight /healthz endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:3000/api/healthz || exit 1
 
 EXPOSE 3000
 
