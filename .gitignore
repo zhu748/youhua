@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -71,3 +72,6 @@ screenshot-*.png
 agent-ctx/
 worklog.md
 download/
+
+# Sandbox scripts
+.zscripts/
