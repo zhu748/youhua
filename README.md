@@ -43,17 +43,17 @@ bun run start
 
 本项目支持多种部署方式。详见 [部署文档](./deploy/)。
 
-### HuggingFace Spaces（免费 + 持久存储）
+### HuggingFace Spaces（拉取预构建镜像，超简单）
+
+GitHub Actions 会自动构建 Docker 镜像并推送到 GHCR，HuggingFace 只需要上传一个 Dockerfile 即可拉取运行。
 
 详见 [`deploy/huggingface/README.md`](./deploy/huggingface/README.md)
 
 要点：
-1. 在 https://huggingface.co/new-space 创建 Docker SDK Space
-2. 启用 Persistent Storage（约 $5/月）
-3. 设置环境变量 `DATABASE_URL=file:/data/proxies.db`
-4. 上传代码（Web UI 拖拽文件 或 git push 到 HF 仓库）
-
-> ⚠️ HuggingFace 不再使用 GitHub Actions 自动同步（容易配置出错）。推荐手动上传或 git push。
+1. push 代码到 GitHub → Actions 自动构建镜像到 `ghcr.io/zhu748/youhua:latest`
+2. 在 https://huggingface.co/new-space 创建 Docker SDK Space
+3. **只上传一个文件**：`deploy/huggingface/Dockerfile`
+4. 完成！HuggingFace 会自动拉取镜像并运行
 
 ### Render（推荐生产环境）
 
@@ -67,8 +67,8 @@ bun run start
 ### Docker（任意主机）
 
 ```bash
-# 构建
-docker build -t proxylab .
+# 直接拉取预构建镜像（无需自己构建）
+docker pull ghcr.io/zhu748/youhua:latest
 
 # 运行（挂载持久卷）
 docker run -d \
@@ -76,7 +76,7 @@ docker run -d \
   -e DATABASE_URL=file:/data/proxies.db \
   -v proxylab-data:/data \
   --name proxylab \
-  proxylab
+  ghcr.io/zhu748/youhua:latest
 ```
 
 ### Vercel ⚠️ 不支持
