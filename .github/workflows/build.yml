@@ -1,7 +1,8 @@
 name: Build & Test
 
 # Validates that the project builds cleanly on every push/PR.
-# This does NOT deploy — see README.md for HuggingFace / Render deployment instructions.
+# The actual Docker image build is done by docker-publish.yml.
+# This workflow only checks lint + next build to catch TypeScript/build errors early.
 
 on:
   push:
@@ -36,13 +37,3 @@ jobs:
         env:
           DATABASE_URL: 'file:/tmp/test.db'
           NEXT_TELEMETRY_DISABLED: '1'
-
-      - name: Test Docker build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          tags: proxylab:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
