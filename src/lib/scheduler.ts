@@ -54,21 +54,48 @@ if (!globalThis.__proxyScheduler) {
 
 /** Ensure the ScheduleConfig row exists. Returns the current config. */
 async function ensureConfig() {
-  let cfg = await db.scheduleConfig.findUnique({ where: { id: 'default' } })
-  if (!cfg) {
-    cfg = await db.scheduleConfig.create({
-      data: {
-        id: 'default',
-        enabled: DEFAULT_CONFIG.enabled,
-        intervalMinutes: DEFAULT_CONFIG.intervalMinutes,
-        targetUrl: DEFAULT_CONFIG.targetUrl,
-        timeoutMs: DEFAULT_CONFIG.timeoutMs,
-        sourcesJson: JSON.stringify(DEFAULT_CONFIG.sources),
-        nextRunAt: new Date(Date.now() + DEFAULT_CONFIG.intervalMinutes * 60 * 1000),
-      },
-    })
+  try {
+    let cfg = await db.scheduleConfig.findUnique({ where: { id: 'default' } })
+    if (!cfg) {
+      cfg = await db.scheduleConfig.create({
+        data: {
+          id: 'default',
+          enabled: DEFAULT_CONFIG.enabled,
+          intervalMinutes: DEFAULT_CONFIG.intervalMinutes,
+          targetUrl: DEFAULT_CONFIG.targetUrl,
+          timeoutMs: DEFAULT_CONFIG.timeoutMs,
+          sourcesJson: JSON.stringify(DEFAULT_CONFIG.sources),
+          nextRunAt: new Date(Date.now() + DEFAULT_CONFIG.intervalMinutes * 60 * 1000),
+        },
+      })
+    }
+    return cfg
+  } catch (err: any) {
+    // Table might not exist yet — try initializing schema then retry once
+    const msg = String(err?.message || err)
+    if (msg.includes('does not exist') || msg.includes('no such table')) {
+      console.warn('[scheduler] Table missing, attempting DB init...')
+      const { initDatabase } = await import('./db-init')
+      await initDatabase()
+      // Retry the query
+      let cfg = await db.scheduleConfig.findUnique({ where: { id: 'default' } })
+      if (!cfg) {
+        cfg = await db.scheduleConfig.create({
+          data: {
+            id: 'default',
+            enabled: DEFAULT_CONFIG.enabled,
+            intervalMinutes: DEFAULT_CONFIG.intervalMinutes,
+            targetUrl: DEFAULT_CONFIG.targetUrl,
+            timeoutMs: DEFAULT_CONFIG.timeoutMs,
+            sourcesJson: JSON.stringify(DEFAULT_CONFIG.sources),
+            nextRunAt: new Date(Date.now() + DEFAULT_CONFIG.intervalMinutes * 60 * 1000),
+          },
+        })
+      }
+      return cfg
+    }
+    throw err
   }
-  return cfg
 }
 
 export interface ScheduleConfigView {
