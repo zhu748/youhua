@@ -29,15 +29,18 @@ ENV HOSTNAME=0.0.0.0
 # │  CHOOSE YOUR DATABASE MODE BELOW (uncomment ONE of the two options)     │
 # └─────────────────────────────────────────────────────────────────────────┘
 
-# Option A: WITH Persistent Storage (recommended if you paid for it)
-# Requires Persistent Storage enabled on the Space (Settings → Persistent storage)
-ENV DATABASE_URL=file:/data/proxies.db
+# Option A: WITHOUT Persistent Storage (default — works on free tier)
+# Data is LOST on every Space restart/redeploy, but app works fine.
+# To get a fresh /api/latest/txt after restart, trigger a new test from the UI.
+ENV DATABASE_URL=file:/tmp/proxies.db
 
-# Option B: WITHOUT Persistent Storage (free tier — data lost on restart)
+# Option B: WITH Persistent Storage (recommended for scheduled tasks)
+# Requires Persistent Storage enabled on the Space (Settings → Persistent storage).
 # To use this, comment out the line above and uncomment the line below:
-# ENV DATABASE_URL=file:/tmp/proxies.db
+# ENV DATABASE_URL=file:/data/proxies.db
 
 EXPOSE 7860
 
-# The base image's CMD already starts the server, but we override to ensure prisma db push runs first
-CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss 2>/dev/null; node server.js"]
+# The base image's CMD already starts the server, but we override to ensure prisma db push runs first.
+# If prisma db push fails (e.g., /data not writable), we still start the server so /api/debug works.
+CMD ["sh", "-c", "echo '[startup] Running prisma db push...' && (npx prisma db push --skip-generate --accept-data-loss 2>&1 || echo '[startup] WARNING: prisma db push failed — visit /api/debug to diagnose.') && echo '[startup] Starting server on port $PORT...' && node server.js"]

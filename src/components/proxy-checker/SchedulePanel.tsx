@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 import {
   Clock, Calendar, Play, Loader2, CheckCircle2, XCircle, ExternalLink,
   Copy, Check, RefreshCw, History, Zap, FileText, ChevronDown, ChevronRight,
+  AlertCircle,
 } from 'lucide-react'
 import {
   Collapsible,
@@ -110,21 +111,60 @@ export function SchedulePanel({ currentSources }: Props) {
   const [saving, setSaving] = useState(false)
   const [triggering, setTriggering] = useState(false)
   const [copiedUrl, setCopiedUrl] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+
+  // Fetch with timeout — avoids infinite spinner if the API is hanging
+  const fetchWithTimeout = (url: string, ms = 8000) => {
+    return new Promise<Response>((resolve, reject) => {
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => {
+        ctrl.abort()
+        reject(new Error(`Request timed out after ${ms}ms`))
+      }, ms)
+      fetch(url, { signal: ctrl.signal })
+        .then((r) => {
+          clearTimeout(timer)
+          resolve(r)
+        })
+        .catch((e) => {
+          clearTimeout(timer)
+          reject(e)
+        })
+    })
+  }
 
   // Initial fetch
   const refresh = useCallback(async () => {
     try {
       const [cfgRes, latestRes, histRes] = await Promise.all([
-        fetch('/api/schedule').then((r) => r.json()),
-        fetch('/api/latest').then((r) => r.json()),
-        fetch('/api/schedule/history?limit=10').then((r) => r.json()),
+        fetchWithTimeout('/api/schedule'),
+        fetchWithTimeout('/api/latest'),
+        fetchWithTimeout('/api/schedule/history?limit=10'),
       ])
-      setConfig(cfgRes)
-      setLatest(latestRes.latest)
-      setHistory(histRes.history || [])
-    } catch (err) {
+
+      // If schedule API failed with an error response, surface it
+      if (!cfgRes.ok) {
+        const errData = await cfgRes.json().catch(() => ({}))
+        throw new Error(
+          errData.detail || errData.error || `Schedule API returned ${cfgRes.status}`,
+        )
+      }
+
+      const cfgData = await cfgRes.json()
+      const latestData = await latestRes.json().catch(() => ({ latest: null }))
+      const histData = await histRes.json().catch(() => ({ history: [] }))
+
+      setConfig(cfgData)
+      setLatest(latestData.latest)
+      setHistory(histData.history || [])
+      setLoadError(null)
+    } catch (err: any) {
       console.error('schedule fetch error', err)
+      setLoadError(err?.message || 'Failed to load schedule data')
+    } finally {
+      setLoading(false)
     }
   }, [])
 
@@ -242,9 +282,41 @@ export function SchedulePanel({ currentSources }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-zinc-600" />
-          </div>
+          {loadError ? (
+            <div className="space-y-3 py-4">
+              <div className="flex items-start gap-2 p-3 rounded-md border border-rose-500/30 bg-rose-500/5">
+                <AlertCircle className="h-4 w-4 text-rose-400 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-rose-300">加载失败</div>
+                  <div className="text-xs text-rose-400/80 mt-1 break-all">{loadError}</div>
+                </div>
+              </div>
+              <div className="text-xs text-zinc-500 space-y-1.5">
+                <div className="font-medium text-zinc-400">排查建议：</div>
+                <div>1. 访问 <code className="text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded">/api/debug</code> 查看数据库状态</div>
+                <div>2. 访问 <code className="text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded">/api/healthz</code> 查看健康检查</div>
+                <div>3. 检查 HuggingFace Space Settings 中的环境变量 <code className="text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded">DATABASE_URL</code></div>
+                <div>4. 若无持久存储，必须设为 <code className="text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded">file:/tmp/proxies.db</code></div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 bg-zinc-950/60 border-zinc-800 text-zinc-300 hover:bg-zinc-900"
+                onClick={() => {
+                  setLoading(true)
+                  setLoadError(null)
+                  refresh()
+                }}
+              >
+                <RefreshCw className="h-3 w-3 mr-1" /> 重试
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-zinc-600" />
+              <span className="ml-2 text-xs text-zinc-600">加载定时任务...</span>
+            </div>
+          )}
         </CardContent>
       </Card>
     )

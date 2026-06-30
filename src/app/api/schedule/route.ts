@@ -8,10 +8,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getScheduleConfig, updateScheduleConfig } from '@/lib/scheduler'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export async function GET() {
-  const cfg = await getScheduleConfig()
-  return NextResponse.json(cfg)
+  try {
+    const cfg = await getScheduleConfig()
+    return NextResponse.json(cfg)
+  } catch (err: any) {
+    console.error('[api/schedule] GET error:', err)
+    return NextResponse.json(
+      {
+        error: 'Failed to load schedule config',
+        detail: err?.message || String(err),
+        hint: 'Database may not be initialized. Check container logs for prisma db push errors.',
+      },
+      { status: 500 },
+    )
+  }
 }
 
 export async function PATCH(req: NextRequest) {
@@ -36,6 +49,10 @@ export async function PATCH(req: NextRequest) {
     const updated = await updateScheduleConfig(patch)
     return NextResponse.json(updated)
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || 'Update failed' }, { status: 500 })
+    console.error('[api/schedule] PATCH error:', err)
+    return NextResponse.json(
+      { error: err?.message || 'Update failed', detail: String(err) },
+      { status: 500 },
+    )
   }
 }

@@ -79,6 +79,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 
 EXPOSE 3000
 
-# Entrypoint: run prisma db push to create/migrate the SQLite schema, then start the server
-# This ensures the DB exists before the app tries to read/write
-CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss 2>/dev/null; node server.js"]
+# Entrypoint: run prisma db push to create/migrate the SQLite schema, then start the server.
+# If prisma db push fails, log the error but still try to start the server — the /api/debug
+# endpoint will help diagnose what went wrong (don't crash the container on DB init failure).
+CMD ["sh", "-c", "echo '[startup] Running prisma db push...' && (npx prisma db push --skip-generate --accept-data-loss 2>&1 || echo '[startup] WARNING: prisma db push failed — app may not function. Visit /api/debug to diagnose.') && echo '[startup] Starting Next.js server on port $PORT...' && node server.js"]
