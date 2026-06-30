@@ -24,7 +24,11 @@ export async function GET(
   const sp = req.nextUrl.searchParams
   const format = sp.get('format') || 'txt'
   const typeFilter = sp.get('type') || 'all'
-  const includeScheme = sp.get('includeScheme') === '1'
+  // Default to INCLUDING the scheme (matches proxyscrape format).
+  // Set to '0' explicitly, or use ?plain=1, to get plain ip:port output.
+  const plain = sp.get('plain') === '1'
+  const includeSchemeParam = sp.get('includeScheme')
+  const includeScheme = plain ? false : includeSchemeParam === null ? true : includeSchemeParam === '1'
   const sort = sp.get('sort') || 'responseTime'
 
   let results = batch.results.filter((r) => r.status === 'working')
@@ -62,7 +66,8 @@ export async function GET(
     `# Generated: ${now}`,
     `# Total working: ${results.length}`,
     `# Sources: ${batch.sources.map((s) => s.url).join(', ')}`,
-    `# Format: ${includeScheme ? 'type://host:port' : 'host:port'}`,
+    `# Format: ${includeScheme ? 'type://host:port (e.g. socks5://1.2.3.4:1080)' : 'host:port (e.g. 1.2.3.4:1080)'}`,
+    `# Tip: add ?plain=1 for plain ip:port output, ?type=socks5 to filter by type`,
     '',
   ].join('\n')
 

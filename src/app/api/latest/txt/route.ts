@@ -5,10 +5,13 @@
  * Query:
  *  - format: 'txt' (default) | 'json'
  *  - type:   'all' (default) | 'http' | 'https' | 'socks4' | 'socks5'
- *  - includeScheme: '1' to prepend type:// to each line
+ *  - includeScheme: '1' (default) | '0' to control whether to prepend type://
+ *    - Default is '1' (include scheme), matching proxyscrape/all/data.txt format
+ *    - Use ?includeScheme=0 or ?plain=1 for plain ip:port output
+ *  - plain: '1' shortcut for includeScheme=0
  *
- * Output format identical to https://cdn.jsdelivr.net/gh/proxyscrape/free-proxy-list@main/proxies/all/data.txt
- * Each line: ip:port (default) or type://ip:port (with includeScheme=1)
+ * Output format matches https://cdn.jsdelivr.net/gh/proxyscrape/free-proxy-list@main/proxies/all/data.txt
+ * Default: each line is `type://ip:port` (e.g. `socks5://1.2.3.4:1080`)
  */
 import { NextRequest } from 'next/server'
 import { getLatestWorkingByType } from '@/lib/scheduler'
@@ -20,7 +23,11 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams
   const format = sp.get('format') || 'txt'
   const type = sp.get('type') || 'all'
-  const includeScheme = sp.get('includeScheme') === '1'
+  // Default to INCLUDING the scheme (matches proxyscrape format).
+  // Set to '0' explicitly, or use ?plain=1, to get plain ip:port output.
+  const plain = sp.get('plain') === '1'
+  const includeSchemeParam = sp.get('includeScheme')
+  const includeScheme = plain ? false : includeSchemeParam === null ? true : includeSchemeParam === '1'
 
   const { run, proxies } = await getLatestWorkingByType(
     ['http', 'https', 'socks4', 'socks5', 'all'].includes(type as any) ? (type as any) : 'all',
@@ -63,7 +70,8 @@ export async function GET(req: NextRequest) {
         `# Working: ${run.working}`,
         `# Failed: ${run.failed}`,
         `# Sources: ${Array.isArray(run.sources) ? run.sources.map((s: any) => s.url).join(', ') : ''}`,
-        `# Format: ${includeScheme ? 'type://host:port' : 'host:port'}`,
+        `# Format: ${includeScheme ? 'type://host:port (e.g. socks5://1.2.3.4:1080)' : 'host:port (e.g. 1.2.3.4:1080)'}`,
+        `# Tip: add ?plain=1 for plain ip:port output, ?type=socks5 to filter by type`,
         `# Generated: ${now}`,
         '',
       ].join('\n')

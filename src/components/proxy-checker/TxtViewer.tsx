@@ -22,7 +22,7 @@ export function TxtViewer({ batchId, workingCount, isRunning }: Props) {
   const [content, setContent] = useState('')
   const [fetchedUrl, setFetchedUrl] = useState<string | null>(null)
   const [fetchedWorkingCount, setFetchedWorkingCount] = useState<number>(-1)
-  const [includeScheme, setIncludeScheme] = useState(false)
+  const [includeScheme, setIncludeScheme] = useState(true)
   const [typeFilter, setTypeFilter] = useState('all')
   const [copied, setCopied] = useState(false)
   const [manualRefresh, setManualRefresh] = useState(0)

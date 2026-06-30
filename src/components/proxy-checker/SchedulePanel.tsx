@@ -510,10 +510,24 @@ export function SchedulePanel({ currentSources }: Props) {
               </Button>
             </div>
             <p className="text-[10px] text-zinc-500 leading-relaxed">
-              此 URL 永远返回最近一次检测的有效代理列表（<code className="text-emerald-400/80">ip:port</code> 格式，每行一个）。
-              可在脚本、爬虫或代理软件中直接引用，与 <code className="text-emerald-400/80">proxyscrape/all/data.txt</code> 用法一致。
+              此 URL 永远返回最近一次检测的有效代理列表（默认 <code className="text-emerald-400/80">type://ip:port</code> 格式，每行一个，与 <code className="text-emerald-400/80">proxyscrape/all/data.txt</code> 一致）。
+              可在脚本、爬虫或代理软件中直接引用。
             </p>
             <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => window.open('/api/latest/txt', '_blank')}
+                className="text-[10px] px-2 py-0.5 rounded border border-zinc-800 bg-zinc-950/40 text-zinc-500 hover:text-emerald-300 hover:border-emerald-500/30"
+                title="默认 — 带协议前缀，与 proxyscrape 一致"
+              >
+                默认 (含协议)
+              </button>
+              <button
+                onClick={() => window.open('/api/latest/txt?plain=1', '_blank')}
+                className="text-[10px] px-2 py-0.5 rounded border border-zinc-800 bg-zinc-950/40 text-zinc-500 hover:text-emerald-300 hover:border-emerald-500/30"
+                title="纯 ip:port 格式（无协议前缀）"
+              >
+                ?plain=1
+              </button>
               <button
                 onClick={() => window.open('/api/latest/txt?type=http', '_blank')}
                 className="text-[10px] px-2 py-0.5 rounded border border-zinc-800 bg-zinc-950/40 text-zinc-500 hover:text-emerald-300 hover:border-emerald-500/30"
@@ -537,12 +551,6 @@ export function SchedulePanel({ currentSources }: Props) {
                 className="text-[10px] px-2 py-0.5 rounded border border-zinc-800 bg-zinc-950/40 text-zinc-500 hover:text-emerald-300 hover:border-emerald-500/30"
               >
                 ?type=socks5
-              </button>
-              <button
-                onClick={() => window.open('/api/latest/txt?includeScheme=1', '_blank')}
-                className="text-[10px] px-2 py-0.5 rounded border border-zinc-800 bg-zinc-950/40 text-zinc-500 hover:text-emerald-300 hover:border-emerald-500/30"
-              >
-                ?includeScheme=1
               </button>
               <button
                 onClick={() => window.open('/api/latest/json', '_blank')}
