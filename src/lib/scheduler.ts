@@ -10,6 +10,7 @@ import {
   createBatch,
   getBatch,
   runBatch,
+  onBatchComplete,
   type Batch,
 } from '@/lib/batch-manager'
 import {
@@ -273,6 +274,10 @@ async function executeScheduledRun(
     targetUrl: cfg.targetUrl,
   })
 
+  // Mark this batch id so the manual-completion callback skips it
+  // (we persist it ourselves via the async waiter below)
+  knownScheduledBatchIds.add(batch.id)
+
   // Start running it in background
   runBatch(batch.id)
 
@@ -308,7 +313,7 @@ async function executeScheduledRun(
 }
 
 /** Persist working proxies from a completed batch to the DB. */
-async function persistBatchResults(runId: string, batch: Batch) {
+export async function persistBatchResults(runId: string, batch: Batch) {
   try {
     const working = batch.results.filter((r) => r.status === 'working')
     const failed = batch.results.filter((r) => r.status === 'failed').length
@@ -573,3 +578,53 @@ export async function getLatestWorkingByType(type?: string) {
     })),
   }
 }
+
+// ─── Manual batch persistence ───────────────────────────────────────────────
+//
+// When a user clicks "Start Test" on the main page, a batch is created via
+// /api/batches (NOT /api/schedule/run). That batch lives only in memory.
+// To make /api/latest/txt reflect the latest test regardless of trigger
+// source, we register a completion callback that persists any completed
+// batch to the database as a "manual" ScheduledRun.
+
+let manualCallbackRegistered = false
+const knownScheduledBatchIds = new Set<string>()
+
+function ensureManualBatchCallback() {
+  if (manualCallbackRegistered) return
+  manualCallbackRegistered = true
+
+  onBatchComplete(async (batch) => {
+    // Only persist batches that have completed/stopped with results.
+    if (batch.status !== 'completed' && batch.status !== 'stopped') return
+    if (batch.results.length === 0) return
+
+    // Skip batches created by executeScheduledRun (already persisted there)
+    if (knownScheduledBatchIds.has(batch.id)) return
+
+    try {
+      const run = await db.scheduledRun.create({
+        data: {
+          trigger: 'manual',
+          status: batch.status === 'stopped' ? 'stopped' : 'completed',
+          startedAt: new Date(batch.createdAt),
+          completedAt: batch.completedAt ? new Date(batch.completedAt) : new Date(),
+          total: batch.stats.total,
+          working: batch.stats.working,
+          failed: batch.stats.failed,
+          sourcesJson: JSON.stringify(batch.sources),
+        },
+      })
+      await persistBatchResults(run.id, batch)
+      console.log(
+        `[scheduler] Manual batch ${batch.id} persisted to DB as run ${run.id} ` +
+          `(${batch.stats.working} working / ${batch.stats.total} total)`,
+      )
+    } catch (err) {
+      console.error('[scheduler] Failed to persist manual batch:', err)
+    }
+  })
+}
+
+// Register on first import (server-side)
+ensureManualBatchCallback()

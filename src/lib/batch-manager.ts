@@ -116,6 +116,22 @@ export function deleteBatch(id: string): boolean {
   return batches.delete(id)
 }
 
+// Completion callbacks — invoked when any batch finishes (completed/stopped/failed).
+// Used by scheduler.ts to persist manual batch results to the database, so that
+// /api/latest/txt returns the latest result regardless of whether it was a
+// scheduled run or a manual "Start Test" click.
+type BatchCompleteCallback = (batch: Batch) => void
+const batchCompleteCallbacks: BatchCompleteCallback[] = []
+
+/**
+ * Register a callback invoked when any batch completes.
+ * The callback runs asynchronously and errors are swallowed (logged) so a
+ * failing callback can't break the batch runner.
+ */
+export function onBatchComplete(cb: BatchCompleteCallback): void {
+  batchCompleteCallbacks.push(cb)
+}
+
 /**
  * Run a batch with concurrency control. Does not await - kicks off in background.
  */
@@ -137,6 +153,16 @@ export function runBatch(batchId: string): void {
       batch.completedAt = Date.now()
       batch.updatedAt = Date.now()
       batch.stats.pending = 0
+      // Notify all registered callbacks (e.g., persist to DB)
+      for (const cb of batchCompleteCallbacks) {
+        try {
+          Promise.resolve(cb(batch)).catch((e) =>
+            console.error('[batch-manager] completion callback error:', e),
+          )
+        } catch (e) {
+          console.error('[batch-manager] completion callback sync error:', e)
+        }
+      }
     }
   }
 
